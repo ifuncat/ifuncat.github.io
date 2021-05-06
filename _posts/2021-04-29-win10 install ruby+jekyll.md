@@ -3,7 +3,7 @@ title: Win10安装ruby+jekyll
 author: ifuncat
 date: 2021-04-29 22:22:22 +0800
 categories: [软件安装]
-tags: [win10软件,软件安装]
+tags: [软件安装]
 ---
 ## 1.安装ruby
 1. ### 下载ruby+devkit2.7.3-1(x64)

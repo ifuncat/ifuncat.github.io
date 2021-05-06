@@ -7,8 +7,7 @@ tags: [Java多线程]
 ---
 <style>
 img{
-    width: 120%;
-    padding-left: 20%;
+    padding-left: 6%;
 }
 </style>
 
@@ -21,4 +20,4 @@ img{
   - 线程是进程中的一个执行单元, 负责当前进程中程序的执行.
   - 一个程序至少有一个进程, 一个进程至少由一个线程.
 
-  <img src="https://cdn.jsdelivr.net/gh/ifuncat/blog-images/post/javacore/multi-trhead-01-01.jpg"/>
+  <img src="https://cdn.jsdelivr.net/gh/ifuncat/blog-images/post/javacore/multi-trhead-01-01.jpg" style="zoom:50%" />
