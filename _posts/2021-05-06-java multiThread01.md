@@ -1,5 +1,5 @@
 ---
-title: Java多线程系列01
+title: Java多线程系列01-进程与线程/线程生命周期/创建线程的几种方式
 author: ifuncat
 date: 2021-05-06 20:22:22 +0800
 categories: [Java核心]
@@ -80,9 +80,117 @@ img{
 
 ## 三. 线程创建的几种方式
 ### 1. 继承Thread类
+```java
+public class ReadBookThread extends Thread{
+    @Override
+    public void run() { //重点在于重写run方法
+        System.out.println(this.getName()+" readBook");
+    }
+}
+
+@Test
+public void testThreadSubClass(){
+    ReadBookThread t1 = new ReadBookThread();
+    t1.setName("t1");
+    t1.start();
+}
+```
 ### 2. 实现Runnable接口
-### 3. 使用匿名内部类
+```java
+public class ReadBookRunnable implements Runnable {
+    @Override
+    public void run() {
+        System.out.println(Thread.currentThread().getName() + " readBook....");
+    }
+}
+
+@Test
+public void testRunnableImpl(){
+    new Thread(new ReadBookRunnable(),"t1").start();
+}
+```
+### 3. 使用匿名内部类/lambda表达式
+```java
+@Test
+public void testLambda() {
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
+            System.out.println(Thread.currentThread().getName() + " readBook....");
+        }
+    }, "t1").start();
+
+    new Thread(() -> {
+        System.out.println(Thread.currentThread().getName() + " readBook....");
+    }, "t2").start();
+}
+```
 ### 4. Callable + Future接口
+会返回线程的执行结果, 如果有的话会抛出异常
+```java
+public class ReadBookCallable implements Callable<Integer> {
+    @Override
+    public Integer call() throws Exception {
+        Thread.sleep(1000);
+        System.out.println(Thread.currentThread().getName()+" readBook...");
+        return Integer.MAX_VALUE;
+    }
+}
+
+@Test
+public void testCallableFutureTask() throws Exception {
+    ReadBookCallable callable = new ReadBookCallable();
+    FutureTask<Integer> futureTask1 = new FutureTask<>(callable);
+
+    //匿名内部类或lambda表达式实现Callable接口
+    FutureTask<Integer> futureTask2 = new FutureTask<>(() -> {
+        Thread.sleep(1000);
+        System.out.println(Thread.currentThread().getName() + " readBook...");
+        return Integer.MAX_VALUE - 1;
+    });
+
+    new Thread(futureTask1, "t1").start();
+    new Thread(futureTask2, "t2").start();
+
+    Thread.sleep(1000); //main线程先干点别的
+    Integer result1 = futureTask1.get(); //接收t1线程执行结果,并且抛出异常,如果有的话
+    Integer result2 = futureTask2.get();
+    System.out.println("t1 result: " + result1);
+    System.out.println("t2 result: " + result2);
+}
+```
 ### 5. 定时器创建线程
+```java
+@Test
+public void testTimer() {
+    Timer timer = new Timer();
+    timer.schedule(new TimerTask() {
+        @Override
+        public void run() {
+            System.out.println(Thread.currentThread().getName() + " timerTask....");
+        }
+    }, 0, 2000); //延迟0ms开始执行一次, 每隔2000ms执行一次
+}
+```
 ### 6. 线程池
+推荐使用线程池, 便于线程管理且节约线程资源
+```java
+@Test
+public void testThreadPool() throws Exception {
+    //executor作为线程池,可以使用spring提供的ThreadPoolTaskExecutor,此处在before方法中初始化了一个ThreadPoolTaskExecutor对象
+    executor.execute(() -> { //传入一个runnable对象,无返回值,不抛出异常
+        System.out.println(Thread.currentThread().getName() + " runnable...");
+    });
+
+    Future<Integer> future = executor.submit(() -> { //传入一个callable对象,有返回值,抛出异常如果有的话
+        System.out.println(Thread.currentThread().getName() + " callable...");
+        return Integer.MAX_VALUE;
+    });
+
+    Thread.sleep(1000); //main线程休息1s
+
+    Integer result = future.get();
+    System.out.println("future result: " + result);
+}
+```
 
