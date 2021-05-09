@@ -1,9 +1,9 @@
 ---
-title: Java多线程01-进程与线程/线程生命周期/创建线程的几种方式
+title: Java并发01-进程与线程/线程生命周期/创建线程的几种方式
 author: ifuncat
 date: 2021-05-06 20:22:22 +0800
 categories: [Java核心]
-tags: [Java多线程]
+tags: [Java并发]
 ---
 <style>
 img{

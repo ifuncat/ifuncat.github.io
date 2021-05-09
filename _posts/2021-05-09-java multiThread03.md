@@ -1,9 +1,9 @@
 ---
-title: Java多线程03-Thread.join/sleep/yield方法详解
+title: Java并发03-Thread.join/sleep/yield方法详解
 author: ifuncat
 date: 2021-05-09 10:22:22 +0800
 categories: [Java核心]
-tags: [Java多线程]
+tags: [Java并发]
 ---
 <style>
 img{
@@ -13,7 +13,7 @@ img{
 ## 一. Thread.join(): 线程插队
 
 ### 1. join()的理解
-- 源码中的注释: waits for this thread to die, 等待这个线程结束
+- 源码中的注释: "waits for this thread to die", 等待这个线程结束
 - join()方法更形象的说法: 线程插队, 等插队的线程执行完毕, 被插队的才继续执行
 - 举例说明: 程序中有两个线程t1, t2, t1的run()方法中调用了t2.join(), 则t1线程会在此段代码`t2.join()`执行后退出, 即暂停t1的run()方法中`t2.join()`这段代码的下面的代码, 直到t2线程执行完毕后, t1线程才会执行后续的未完代码.
 
