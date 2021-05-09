@@ -1,5 +1,5 @@
 ---
-title: Java多线程系列01-进程与线程/线程生命周期/创建线程的几种方式
+title: Java多线程01-进程与线程/线程生命周期/创建线程的几种方式
 author: ifuncat
 date: 2021-05-06 20:22:22 +0800
 categories: [Java核心]
@@ -193,4 +193,21 @@ public void testThreadPool() throws Exception {
     System.out.println("future result: " + result);
 }
 ```
-
+## 四. 注意点
+### 1. run()与start()
+  创建并运行一个线程所犯的常见错误是调用线程的run()方法而非start()方法，如下所示, run方法确实被调用了, 但是调用的线程不是new出来的t1线程, 而是被当前线程即main线程所执行. 想让t1线程执行, 必须调用start()
+```java
+public static void main(String[] args) {
+    new Thread(()-> System.out.println("do something"),"t1").run();
+}
+```
+### 2. 线程的执行顺序问题
+  如下所示依次初始化并启动多个线程, 但是各个线程的实际执行顺序却是随机的, 这是由于操作系统和JVM共同决定的, 默认情况下JVM的线程调度机制为随机, 每个线程获得CPU时间片的概率随机, 从而执行顺序随机. 但可以设置成按照优先级执行, 优先级高的线程获得CPU时间片的概率大, 但是不代表优先级高的线程一定先于优先级低的线程先执行
+```java
+@Test //顺序随机,无法复现多执行几次
+public void testExecuteSequence() {
+    for (int i = 0; i < 10; i++) {
+        new Thread(() -> System.out.println(Thread.currentThread().getName() + " do something"), i + "").start();
+    }
+}
+```

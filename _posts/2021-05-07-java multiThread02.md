@@ -1,5 +1,5 @@
 ---
-title: Java多线程系列02-使用多线程的优缺点
+title: Java多线程02-使用多线程的优缺点
 author: ifuncat
 date: 2021-05-07 20:22:22 +0800
 categories: [Java核心]

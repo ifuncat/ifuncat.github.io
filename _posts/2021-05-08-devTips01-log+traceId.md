@@ -1,5 +1,5 @@
 ---
-title: 开发Tips系列01-日志添加traceId从而快速定位方法调用链
+title: 开发Tips01-日志添加traceId从而快速定位方法调用链
 author: ifuncat
 date: 2021-05-08 20:22:22 +0800
 categories: [开发Tips]
