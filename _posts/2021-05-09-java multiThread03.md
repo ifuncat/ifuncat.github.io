@@ -38,11 +38,10 @@ public void testDaemon(){
 ## 二. 线程的中断
 
 ### 1. 线程中断说明
-- 如果需要线程来执行一个长时间的任务, 可能需要能够在执行过程中中断这个线程的机制.
-- 例如: 下载一个下载速度很慢的文件, 想要中断这次下载, 换个资源再下载, 这时程序就要中断下载线程的执行
+- 如果需要线程来执行一个长时间的任务, 可能需要能够在执行过程中中断这个线程的机制. 例如下载一个下载速度很慢的文件, 想要中断这次下载, 换个资源再下载, 这时程序就要中断下载线程的执行
 - interrupt()方法并不是中断线程, 只是将线程的中断标志位设置为true.
-- 对于非阻塞的线程, 执行interrupt()方法只是将线程的中断标志位设置为true, 但是该线程的状态不会改变, 如果原来线程状态为运行中, 那么这个线程还会执行下去, 详见非阻塞线程的interrupt操作
-- 对于阻塞的线程, 如执行了sleep() / join() / wait()方法的线程, 对该线程执行interrupt()会产生一个InterruptedException, 而且会清除掉线程中断标志位, 即此时中断标志位的值仍为默认的旧值false(表示未中断), 也不会结束该线程而是会一直执行下去, 也就是阻塞线程调用了interrupted()方法非但没有中断线程, 而且还会产生一个InterruptedException.
+- 对于非阻塞的线程, 执行interrupt()方法只是将线程的中断标志位设置为true, 但是该线程的状态不会改变, 如果原来线程状态为运行中, 那么这个线程还会执行下去, 详见非阻塞线程的interrupt操作.
+- 对于阻塞的线程, 如执行了sleep() / join() / wait()方法的线程, 对该线程执行interrupt()会产生一个InterruptedException, 而且会清除掉线程中断标志位, 即此时中断标志位的值仍为默认的旧值false(表示未中断), 也不会结束该线程而是会一直执行下去, 也就是处于阻塞状态的线程被调用了interrupted()方法非但没有中断该线程, 还会产生一个InterruptedException.
 
 ### 2. 非阻塞线程的interrupt操作
 ```java
@@ -115,7 +114,7 @@ public void testWhileInterrupt() throws InterruptedException {
 ```
 执行结果分析
 - 当线程中断标志位不为true时, t1线程会while循环打印. 
-- t2线程在执行到2ms时触发执行t1.interrupt(), 此时t1的中断标志位变为true, 从而会跳出while循环, t1执行结束.
+- t2线程在执行到2ms时触发执行t1.interrupt(), 此时t1中断标志位变为true, 从而跳出while循环, t1执行结束.
 
 ### 4. 阻塞线程的interrupt()+isInterrupted()控制while循环
 ```java
@@ -164,8 +163,8 @@ public void testBlockWhileInterrupt() throws InterruptedException {
 //....//无限循环下去
 ```
 执行结果分析:
-- t1线程在线程中断位为默认false时会无需循环下去, 每次循环都会休眠100ms, 线程状态由running -> block.
-- t2线程在执行800ms后执行中断t1线程操作, 由于此时t1处于阻塞状态, 因此会抛出一个InterruptedException, 虽然抛出异常但是在循环内部, 因此不会跳出循环或者说结束循环, 另外t1的中断位仍为默认false, 因此t1会一直处于while循环下. 也就无法达到控制while循环的目的.
+- 线程中断标志位是默认的false时, t1线程会执行无需循环操作, 每次循环都会休眠100ms, 此时线程状态由running -> block.
+- t2线程在执行800ms后执行中断t1线程的操作, 由于t1此时处于阻塞状态, 会抛出一个InterruptedException, 虽然抛出异常但是在循环内部, 因此不会跳出循环或结束循环, 另外t1的中断标志位仍为默认的false, 故t1会一直处于while循环下. 也就无法达到控制while循环的目的.
 
 ### 5. 阻塞线程的interrupt()+isInterrupted()控制while循环的正确做法
 ```java
@@ -212,6 +211,6 @@ public void testCorrectBlockWhileInterrupt() throws InterruptedException {
 //t1 end...
 ```
 执行结果分析:
-- 执行逻辑与阻塞线程的interrupt()+isInterrupted()控制while循环几乎一致, 不同之处在于正确的做法是在while循环外进行try / catch.
-- 这样做的好处是当发生了InterruptedException, 会跳出这个while循环, 而如果在while循环内部进行try / catch则不会跳出循环.
+- 执行逻辑与阻塞线程的interrupt()+isInterrupted()控制while循环中几乎一致, 不同之处在于正确的做法是在while循环外进行try / catch.
+- 这样做的好处是当发生了InterruptedException, 会跳出这个while循环, 线程执行结束. 而如果在while循环内部进行try / catch则不会跳出循环, 线程就会一直执行下去.
 - 因此正确做法是对整个可能产生InterruptedException的代码块进行try / catch.
