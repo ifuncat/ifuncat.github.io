@@ -1,5 +1,5 @@
 ---
-title: Java并发03-Thread.join/sleep/yield方法详解
+title: Java并发03-守护线程/线程的中断
 author: ifuncat
 date: 2021-05-09 10:22:22 +0800
 categories: [Java核心]
@@ -10,150 +10,208 @@ img{
     padding-left: 3%;
 }
 </style>
-## 一. Thread.join(): 线程插队
+## 一. 守护线程
 
-### 1. join()的理解
-- 源码中的注释: "waits for this thread to die", 等待这个线程结束
-- join()方法更形象的说法: 线程插队, 等插队的线程执行完毕, 被插队的才继续执行
-- 举例说明: 程序中有两个线程t1, t2, t1的run()方法中调用了t2.join(), 则t1线程会在此段代码`t2.join()`执行后退出, 即暂停t1的run()方法中`t2.join()`这段代码的下面的代码, 直到t2线程执行完毕后, t1线程才会执行后续的未完代码.
+### 1. 什么是守护线程
+- 简单来说就是为其他线程服务的线程.
+- 也可以称之为后台线程, 非用户线程, 即随系统结束而结束的线程.
+- JVM中, 所有非守护线程都执行完毕后, 无论是否存在守护线程, JVM都会自动退出
+- 编写代码时注意: 守护线程不能持有任何需要关闭的资源, 如IO流等, 因为JVM退出时, 守护线程没有机会来释放资源, 会导致数据丢失.
 
-
-### 2.join()的使用
-#### 示例场景
-- 程序中有两线程t1, t2, t1独立运行耗时100ms, t2独立运行耗时200ms. t2对共享变量config进行赋值, t1读取config的值.
-- 期待结果: t1读取到的config的值是t2赋值后的新值.
-- 问题: 不做处理情况下,t1耗时短读取到的config必然是旧值. 即便两个线程耗时相同, t1, t2操作共享变量会产生同步问题, t1可能先于t2执行, 读取到的仍然是config的旧值.
-- 解决: t2在t1线程中插队, 因此需要等待t2执行完毕,t1继续执行,此时共享变量是t2修改后的新值
-
-#### 代码演示
-```java
-public class JoinDemo {
-    private static Integer config = 0; //共享变量
-
-    @Test //一般情况下,t1由于耗时短,不等t2赋值完毕, t1已经执行完毕,读取config为旧值
-    public void testNoJoin() throws InterruptedException {
-        Thread t2 = new Thread(() -> {
-            try {
-                Thread.sleep(200); //模拟t2耗时200ms
-                config = 1; //t2线程赋值config
-                System.out.println("t2 set config: " + config);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }, "t2");
-
-        Thread t1 = new Thread(() -> {
-            try {
-                Thread.sleep(100); //模拟t1耗时100ms
-                System.out.println("t1 get config: " + config); //读取共享变量的值
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }, "t1");
-
-        t1.start();
-        t2.start();
-
-        Thread.sleep(1000); //模拟主线程暂停,便于查看执行效果
-    }
-    //打印结果: t1 get config: 0   t2 set config: 1
-
-    @Test//t1线程中,t2线程插队,因此t1线程执行到 t2.join(); 代码时停下等待, 直到t2执行完毕,此时config已经时t2修改后的新值
-    public void testInJoin() throws InterruptedException {
-        Thread t2 = new Thread(() -> {
-            try {
-                Thread.sleep(200); //模拟t2耗时200ms
-                config = 1; //t2线程赋值config
-                System.out.println("t2 set config: " + config);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }, "t2");
-
-        Thread t1 = new Thread(() -> {
-            try {
-                Thread.sleep(100); //模拟t1耗时100ms
-                t2.join(); //t1线程中,t2线程插队
-                System.out.println("t1 get config: " + config);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }, "t1");
-
-        t1.start();
-        t2.start();
-
-        Thread.sleep(1000); //模拟主线程暂停,便于查看执行效果
-    }
-
-    //打印结果: t1 get config: 1   t2 set config: 1
-}
-```
-### 3.join()的用途
-确保能够完整的获得插队线程的处理结果<br/>
-以上示例中可以看出, 如果t1需要读取共享变量经过t2更新后的新值, 需要先让t2完成操作, 故需让t2插队, t1才能读到新值.
-
-## 二. Thread.yield(): 线程退让
-### 1. yield()的理解
-- 当前线程提示资源调度器, 该线程愿意放弃其当前正在使用的CPU资源, 即停止执行.
-- 资源调度器可以选择忽视这个请求提示, 则请求的线程将继续执行.
-- yield()方法执行成功, 则这个线程的状态由runnable(运行) -> running(就绪), 否则仍为runnable.
-- 举例说明: 有两个线程t1,t2, 两者优先级一致都为默认的5, 在t1的run()方法中调用了Thread.yield(), 请求让出CPU资源, 让其他同等级的线程如t2先执行, 如果请求被忽略, t1继续执行, 如果请求允许, 则t2得到CPU时间片开始执行
-
-### 2.yield()的使用
-#### 示例场景
-- 驾校里有四名学员分别为t1, t2, t3, t4, 其中t1的优先练车的级别最高为1, t4优先级最低为10, t2/t3的优先级相等均为5.
-- t1 优先级最高,最先练车, 且不能将练车机会让给其他低级别的学员. t4优先级最低, 只能等其他人练完后才能开始练车.
-- t2/t3优先级相同可以礼让练车机会给对方.
-
-#### 代码演示
+### 2. 代码演示
 ```java
 @Test
-public void testYield() {
-    //定义练车行为
-    Runnable drive = () -> {
-        for (int i = 0; i < 5; i++) {
-            if (i == 3) { //当这个学员练习3次开车之后，尝试把机会让给同级别的学员
-                System.out.println(Thread.currentThread().getName() + " try to yield..");
-                Thread.yield(); //当前线程请求退让CPU资源, 是否允许由CPU决定
-            }
-            //这个学员正在练习开车
-            System.out.println(Thread.currentThread().getName() + " is practicing driving....");
+public void testDaemon(){
+    Thread t1 = new Thread(() -> {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-    };
-    //定义4个学员,并设置优先级
-    Thread t1 = new Thread(drive, "t1");
-    Thread t2 = new Thread(drive, "t2"); //t2,t3默认优先级5
-    Thread t3 = new Thread(drive, "t3");
-    Thread t4 = new Thread(drive, "t4");
-    t1.setPriority(Thread.MAX_PRIORITY); //最高优先级10
-    t4.setPriority(Thread.MIN_PRIORITY); //最低优先级1
-
-    //开始练车
+        System.out.println("t1 running...");
+    });
+    t1.setDaemon(true); //设置为守护线程, 默认为非守护线程
     t1.start();
-    t2.start();
-    t3.start();
-    t4.start();
 }
 ```
-#### 结果分析
-可能实际情况并不是预想的: t1先执行完毕, t2, t3交叉执行, t4最后执行, 而是杂乱无章的. 原因如下: 
-- 线程请求退让CPU资源, 并不一定会被允许, 可能被否而继续执行. 因此t2线程请求退让时被否而继续执行.
-- 线程的优先级高低只是表明抢占CPU资源的概率的大小, 并不表明优先级高的线程一定会先执行, 因此t4可能最先执行
 
-### 3. 注意点
-- 线程执行yield(), 不一定能成功退让CPU资源, 退让成功概率由CPU决定.
-- 关于线程优先级, 只表示线程竞争CPU时间片的概率, 不保证优先级高的一定先执行.
+## 二. 线程的中断
 
-## 三. Thread.sleep(): 线程休眠
-### 1. sleep()的理解
-让当前正在运行的线程休眠指定时间
-  
-### 2. sleep()与yield()的异同
-#### 相同点
-- 都会暂停执行当前线程, 如果yield()方法的退让CPU资源请求被允许的话.
-- 如果当前线程持有锁, 执行sleep()/yield()后, 在等待竞争CPU资源过程中都不会释放锁.
-#### 不同点
-- sleep()可以精确指定线程休眠的时间且线程一定会暂停执行, 而yield()则不一定
-- sleep的线程在休眠过程中可能抛出异常, 能被打断, yield()不能被打断.
-  
+### 1. 线程中断说明
+- 如果需要线程来执行一个长时间的任务, 可能需要能够在执行过程中中断这个线程的机制.
+- 例如: 下载一个下载速度很慢的文件, 想要中断这次下载, 换个资源再下载, 这时程序就要中断下载线程的执行
+- interrupt()方法并不是中断线程, 只是将线程的中断标志位设置为true.
+- 对于非阻塞的线程, 执行interrupt()方法只是将线程的中断标志位设置为true, 但是该线程的状态不会改变, 如果原来线程状态为运行中, 那么这个线程还会执行下去, 详见非阻塞线程的interrupt操作
+- 对于阻塞的线程, 如执行了sleep() / join() / wait()方法的线程, 对该线程执行interrupt()会产生一个InterruptedException, 而且会清除掉线程中断标志位, 即此时中断标志位的值仍为默认的旧值false(表示未中断), 也不会结束该线程而是会一直执行下去, 也就是阻塞线程调用了interrupted()方法非但没有中断线程, 而且还会产生一个InterruptedException.
+
+### 2. 非阻塞线程的interrupt操作
+```java
+@Test
+public void testInterrupt() throws InterruptedException {
+    Thread t1 = new Thread(() -> {
+        boolean interruptFlag = Thread.currentThread().isInterrupted(); //线程是否中断的标志位
+        for (int i = 0; i < 1000; i++) { //循环打印1000次
+            System.out.println("t1 add to " + i + " interrupted: " + interruptFlag);
+        }
+    }, "t1");
+
+    Thread t2 = new Thread(() -> {
+        try {
+            Thread.sleep(2);  //t2线程执行1ms后开始执行中断t1操作
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("t2 start interrupt t1...");
+        t1.interrupt();
+    }, "t2");
+
+    t1.start();
+    t2.start();
+
+    Thread.sleep(5000); //暂停主线程,便于观察结果
+}
+
+//执行结果如下
+//t1 add to 348 interrupted: false
+//t1 add to 349 interrupted: false
+//t1 add to 350 interrupted: false
+//t2 start interrupt t1...
+//t1 add to 351 interrupted: false
+//t1 add to 352 interrupted: false
+//t1 add to 353 interrupted: false
+//t1 add to 354 interrupted: false
+//...... //直到add to 999, t1线程执行完全,不会中断
+```
+执行结果分析:
+- t1线程循环1000次并打印index, t2线程则在其开始执行的第2ms后触发中断t1操作, 此时t1线程并未立即执行停止, 而是一直执行完全, 打印了1000次
+- 解释: t1.interrupt()方法只是让t1线程的中断标志位变为了true, 并未中断t1线程, 所以t1线程还是保持原来的运行中状态, 就会一直执行下去
+
+### 3. 非阻塞线程的interrupt()+isInterrupted()控制while循环
+```java
+@Test
+public void testWhileInterrupt() throws InterruptedException {
+    Thread t1 = new Thread(() -> {
+        while (!Thread.currentThread().isInterrupted()) { //当线程中断标志位不为true时,循环执行打印
+            System.out.println("t1 is running....");
+        }
+        System.out.println("t1 end...");
+    }, "t1");
+
+    Thread t2 = new Thread(() -> {
+        try {
+            Thread.sleep(1);  //t2线程执行1ms后开始执行中断t1操作
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("t2 start interrupt t1...");
+        t1.interrupt();
+    }, "t2");
+
+    t1.start();
+    t2.start();
+
+    Thread.sleep(1000); //暂停主线程,便于观察结果
+}
+```
+执行结果分析
+- 当线程中断标志位不为true时, t1线程会while循环打印. 
+- t2线程在执行到2ms时触发执行t1.interrupt(), 此时t1的中断标志位变为true, 从而会跳出while循环, t1执行结束.
+
+### 4. 阻塞线程的interrupt()+isInterrupted()控制while循环
+```java
+@Test
+public void testBlockWhileInterrupt() throws InterruptedException {
+    Thread t1 = new Thread(() -> {
+        while (!Thread.currentThread().isInterrupted()) { //如果当前线程没被中断，则一直进行
+            try {
+                Thread.sleep(100); //每次循环时休眠100ms, 转为阻塞状态
+            } catch (InterruptedException e) { //虽然抛出异常但是在循环内部, 因此不会跳出循环或者说结束循环
+                e.printStackTrace();
+            }
+            System.out.println("t1 is running....");
+        }
+        System.out.println("t1 end...");
+    }, "t1");
+
+    Thread t2 = new Thread(() -> {
+        try {
+            Thread.sleep(800);  //t2线程执行1ms后开始执行中断t1操作
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("t2 start interrupt t1...");
+        t1.interrupt();
+    }, "t2");
+
+    t1.start();
+    t2.start();
+
+    Thread.sleep(2000); //暂停主线程,便于观察结果
+}
+
+//执行结果如下
+//t1 is running....
+//t1 is running....
+//t1 is running....
+//t2 start interrupt t1...
+//java.lang.InterruptedException: sleep interrupted
+//	at java.lang.Thread.sleep(Native Method)
+//	at com.ifuncat.demo.test.normal.javacore.multithread.b_basefunction.JoinDemo.//lambda$testBlockWhileInterrupt$11(JoinDemo.java:182)
+//	at java.lang.Thread.run(Thread.java:748)
+//t1 is running....
+//t1 is running....
+//t1 is running....
+//....//无限循环下去
+```
+执行结果分析:
+- t1线程在线程中断位为默认false时会无需循环下去, 每次循环都会休眠100ms, 线程状态由running -> block.
+- t2线程在执行800ms后执行中断t1线程操作, 由于此时t1处于阻塞状态, 因此会抛出一个InterruptedException, 虽然抛出异常但是在循环内部, 因此不会跳出循环或者说结束循环, 另外t1的中断位仍为默认false, 因此t1会一直处于while循环下. 也就无法达到控制while循环的目的.
+
+### 5. 阻塞线程的interrupt()+isInterrupted()控制while循环的正确做法
+```java
+@Test
+public void testCorrectBlockWhileInterrupt() throws InterruptedException {
+    Thread t1 = new Thread(() -> {
+        try { //在while循环外进行try/catch, 当发生异常时,会跳出while循环
+            while (!Thread.currentThread().isInterrupted()) {
+                Thread.sleep(100);
+                System.out.println("t1 is running....");
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace(); //可选择注释掉
+            //处理发生
+            System.out.println("t1 end...");
+        }
+    }, "t1");
+
+    Thread t2 = new Thread(() -> {
+        try {
+            Thread.sleep(800);  //t2线程执行1ms后开始执行中断t1操作
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("t2 start interrupt t1...");
+        t1.interrupt();
+    }, "t2");
+
+    t1.start();
+    t2.start();
+
+    Thread.sleep(2000); //暂停主线程,便于观察结果
+}
+
+//执行结果如下:
+//t1 is running....
+//t1 is running....
+//t1 is running....
+//t2 start interrupt t1...
+//java.lang.InterruptedException: sleep interrupted
+//	at java.lang.Thread.sleep(Native Method)
+//	at com.ifuncat.demo.test.normal.javacore.multithread.b_basefunction.JoinDemo.lambda$testCorrectBlockWhileInterrupt$13(JoinDemo.java:212)
+//	at java.lang.Thread.run(Thread.java:748)
+//t1 end...
+```
+执行结果分析:
+- 执行逻辑与阻塞线程的interrupt()+isInterrupted()控制while循环几乎一致, 不同之处在于正确的做法是在while循环外进行try / catch.
+- 这样做的好处是当发生了InterruptedException, 会跳出这个while循环, 而如果在while循环内部进行try / catch则不会跳出循环.
+- 因此正确做法是对整个可能产生InterruptedException的代码块进行try / catch.
