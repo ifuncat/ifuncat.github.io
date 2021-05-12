@@ -267,7 +267,7 @@ ObjectMonitor() {
 - 若线程调用wait()方法, 将释放当前持有的monitor, owner变量变为null, count-1. 同时该线程进入_waitset中等待被唤醒.
 - 若当前线程执行完毕将释放monitor, 并且复位owner变量的值, 以便其他线程获得monitor.
 
-<img src="https://cdn.jsdelivr.net/gh/ifuncat/blog-images/post/javacore/multi-thread-05-02.jpg" style="zoom:100%" />
+<img src="https://cdn.jsdelivr.net/gh/ifuncat/blog-images/post/javacore/multi-thread-05-02-2.jpg" style="zoom:100%" />
 
 
-参考: https://blog.csdn.net/javazejian/article/details/72828483
+参考: [https://blog.csdn.net/javazejian/article/details/72828483](https://blog.csdn.net/javazejian/article/details/72828483)
