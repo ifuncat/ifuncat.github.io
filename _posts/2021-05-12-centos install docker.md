@@ -5,7 +5,7 @@ date: 2021-05-12 22:22:22 +0800
 categories: [软件安装]
 tags: [软件安装, Docker]
 ---
-#### 1. 准备工作
+### 1. 准备工作
 - 确定CentOS的版本
 ```shell
 cat /etc/redhat-release
@@ -30,7 +30,7 @@ yum -y install gcc-c++
 yum remove docker \ docker-client \  docker-client-latest \ docker-common \ docker-latest \ docker-latest-logrotate \ docker-logrotate \  docker-selinux \ docker-engine-selinux \ docker-engine
 ```
 
-#### 2. 开始安装docker
+### 2. 开始安装docker
 - 安装需要的软件包
 ```shell
 yum install -y yum-utils device-mapper-persistent-data lvm2
@@ -48,7 +48,7 @@ yum makecache fast
 yum -y install docker-ce
 ```
 
-#### 3. 开启docker并验证
+### 3. 开启docker并验证
 - 设置开机启动docker
 ```shell
 systemctl enable docker
@@ -62,7 +62,7 @@ systemctl  start/stop/restart  docker
 docker version
 ```
 
-#### 4. 配置阿里云镜像加速
+### 4. 配置阿里云镜像加速
 - 先在阿里云申请加速链接: [https://help.aliyun.com/document_detail/60750.html](https://help.aliyun.com/document_detail/60750.html)
 - 创建目录及文件(如果不存在)
 
