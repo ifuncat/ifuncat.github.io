@@ -5,13 +5,7 @@ date: 2021-05-13 22:22:22 +0800
 categories: [Java核心]
 tags: [Java并发]
 ---
-<style>
-img{
-    /* padding-left: 3%;
-    margin: 0 auto; */
-    align: center;
-}
-</style>
+
 
 ## 一. ThreadLocal 概述
 ### 1. 前言
@@ -95,10 +89,7 @@ static class ThreadLocalMap {
 
   //省略
 ```
-
-<div align=center>
-    <img width=50% src="https://cdn.jsdelivr.net/gh/ifuncat/blog-images/post/javacore/2021-threadlocal-01.png">
-</div>
+<img src="https://cdn.jsdelivr.net/gh/ifuncat/blog-images/post/javacore/threadlocal-03.jpg" width="60%">
 
 ### 2. ThreadLocal.set(T value)
 
@@ -120,9 +111,7 @@ ThreadLocalMap getMap(Thread t) {
 - 往线程本地变量存值时调用`ThreadLocal.set(T value)`, 其中先获得执行这段代码的线程对象的threadLocals属性对象, 其本质是个map.
 - 如果没有threadLocals, 则初始化这个属性, 并向这个map中赋值, key为`this`, 即用户定义的ThreadLocal对象, value为需要代码中需要放入的值, 如上述例中的`localVal.set("hello t1");`, map中的key为类型为ThreadLocal的`localVal`对象, value为`"hello t1"` 字符串.
 
-<div align=center>
-    <img width=80% src="https://cdn.jsdelivr.net/gh/ifuncat/blog-images/post/javacore/threadlocal-00.png">
-</div>
+<img src="https://cdn.jsdelivr.net/gh/ifuncat/blog-images/post/javacore/threadlocal-00.png" width="90%">
 
 ### 3. ThreadLocal.get()
 
@@ -142,16 +131,16 @@ public T get() {
 }
 ```
 
-- 获得线程本地变量中存入的值调用`ThreadLocal.get()`, 先获得当前线程的threadLocals属性, 其作为一个map, 当前ThreadLocal对象作为key, 从map中可以获得之前存入的值. 如上述例中的`localVal.get()`, map为执行这段代码的线程对象的threadLocals属性对象, key为`localVal`.
+- 调用`ThreadLocal.get()`获得线程本地变量中存入的值, 先获得当前线程的threadLocals属性, threadlocals实际上是一个map.
+- 当前ThreadLocal对象作为key, 从map中可以获得之前存入的值. 如上述例中的`localVal.get()`, map为执行这段代码的线程对象的属性threadLocals, key为`localVal`.
 
 ### 4. 堆/栈/线程/ThreadLocal在内存中的分布
-- 每条线程都有自己的栈, 栈中的变量引用线程私有. 栈中的变量引用如threadLocalRef指向堆中的ThreadLocal对象, currentThreadRef指向堆中的当前线程的线程对象.
-- 线程对象中持有一个属性, 类型为ThreadLocalMap的对象, 本质上是一个map.
+- 每条线程都有自己的栈, 栈中的变量线程私有. 栈中的变量如threadLocalRef指针指向堆中的ThreadLocal对象, currentThreadRef指向堆中的当前线程的线程对象.
+- 线程对象中持有一个属性threadLocals, 类型为ThreadLocalMap的对象, 本质上是一个map.
 - threadLocalMap中的key为threadLocal对象, value为存入的目标对象的引用, 指向堆中的目标对象.
  
-<div align=center>
-    <img width=80% src="https://cdn.jsdelivr.net/gh/ifuncat/blog-images/post/javacore/threadlocal-01.png">
-</div>
+<img src="https://cdn.jsdelivr.net/gh/ifuncat/blog-images/post/javacore/threadlocal-01.png" width="80%">
 
 ## 四. ThreadLocal实战
-[利用slfj.mdc实现请求链路追踪](https://snailclimb.gitee.io/javaguide/#/docs/java/multi-thread/%E4%B8%87%E5%AD%97%E8%AF%A6%E8%A7%A3ThreadLocal%E5%85%B3%E9%94%AE%E5%AD%97?id=threadlocal%e9%a1%b9%e7%9b%ae%e4%b8%ad%e4%bd%bf%e7%94%a8%e5%ae%9e%e6%88%98)
+- [日志添加traceId从而快速定位方法调用链](https://ifuncat.github.io/posts/devTips01-log+traceId/)
+- [利用slfj.mdc实现请求链路追踪](https://snailclimb.gitee.io/javaguide/#/docs/java/multi-thread/%E4%B8%87%E5%AD%97%E8%AF%A6%E8%A7%A3ThreadLocal%E5%85%B3%E9%94%AE%E5%AD%97?id=threadlocal%e9%a1%b9%e7%9b%ae%e4%b8%ad%e4%bd%bf%e7%94%a8%e5%ae%9e%e6%88%98)
