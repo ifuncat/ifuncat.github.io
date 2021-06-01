@@ -3,7 +3,7 @@ title: 开发Tips02-AOP+注解实现日志打印方法入参返回值
 author: ifuncat
 date: 2021-05-08 22:22:22 +0800
 categories: [开发Tips]
-tags: [开发Tips,日志优化,SpringAOP]
+tags: [开发Tips,日志优化,AOP]
 ---
 <style>
 img{
